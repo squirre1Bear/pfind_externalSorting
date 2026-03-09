@@ -1,2 +1,9 @@
-# pfind-train-cyh.cc
-# pfind-train-zyh.cc
+# pfind\_externalSorting
+
+对2.5亿个数值进行排序
+
+### 25/3/9更新
+
+* 完成基本数据读写、排序功能。
+* 可识别非法数据。
+* 性能差：对10M条数据排序需要70s。
