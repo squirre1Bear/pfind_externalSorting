@@ -24,6 +24,7 @@
     <ProjectGuid>{623b5e63-3e77-4813-987e-4a9b6966a331}</ProjectGuid>
     <RootNamespace>pfindexternalSorting</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>pfind_external_sorting</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -127,7 +128,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="number_parser.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\Python_Projects\drawPictures\.venv\data_100m.txt" />
+    <Text Include="..\..\Python_Projects\drawPictures\.venv\data_10m.txt" />
+    <Text Include="data_1m.txt" />
+    <Text Include="errors.txt" />
+    <Text Include="result.txt" />
+    <Text Include="test1.txt" />
+    <Text Include="test2.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="number_parser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

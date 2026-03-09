@@ -18,5 +18,24 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="number_parser.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="test1.txt">
+      <Filter>资源文件</Filter>
+    </Text>
+    <Text Include="test2.txt" />
+    <Text Include="data_1m.txt" />
+    <Text Include="errors.txt" />
+    <Text Include="result.txt" />
+    <Text Include="..\..\Python_Projects\drawPictures\.venv\data_10m.txt" />
+    <Text Include="..\..\Python_Projects\drawPictures\.venv\data_100m.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="number_parser.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
