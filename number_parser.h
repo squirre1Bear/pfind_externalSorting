@@ -15,6 +15,5 @@ uint64_t GetKey(ANum& num_struct);
 void KeyParser(uint64_t key, ANum& num_struct);
 bool RoundBase(ANum& num_struct, uint16_t round);
 bool ParseSign(std::string& num_str, ANum& num_struct, int& cur_index, int& decimal_point_index);
-void StandardOut(ANum& num_struct);
 
 #endif
