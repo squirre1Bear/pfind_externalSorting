@@ -134,11 +134,12 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="..\..\Python_Projects\drawPictures\.venv\data_100m.txt" />
     <Text Include="..\..\Python_Projects\drawPictures\.venv\data_10m.txt" />
+    <Text Include="data_0m.txt" />
+    <Text Include="data_1m.txt" />
     <Text Include="errors.txt" />
     <Text Include="result.txt" />
-    <Text Include="test1.txt" />
-    <Text Include="test2.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="number_parser.h" />

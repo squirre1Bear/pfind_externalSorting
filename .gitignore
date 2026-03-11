@@ -4,9 +4,12 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 result.txt
+errors.txt
+data_0m.txt
 data_1m.txt
 data_10m.txt
 data_100m.txt
+data_250m.txt
 
 
 # User-specific files
