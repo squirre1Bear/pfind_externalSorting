@@ -4,11 +4,9 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 result.txt
-error.txt
-data_1m.txt
-data_10m.txt
-data_100m.txt
-
+errors.txt
+data_*m.txt
+run_*.bin
 
 # User-specific files
 *.rsuser
