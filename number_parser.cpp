@@ -8,7 +8,7 @@
 #include "number_parser.h"
 
 
-bool IsNumOrNot(char c) {
+inline bool IsNumOrNot(char c) {
 	return c - '0' >= 0 && c - '0' <= 9;
 }
 
@@ -254,5 +254,39 @@ void KeyParser(uint64_t key, ANum& num_struct) {
 		num_struct.exponent = ((key & exp_mask) >> 52) - 1000;
 	}
 
+	return;
+}
+
+
+void RadixSort64(std::vector<uint64_t>& keys) {
+	const int bits_per_pass = 16;  //每个桶包括了几位数字
+	const int pass_num = (64 + bits_per_pass -1) / bits_per_pass;    //总共进行几趟基数排序，进行了向上取整
+	const uint64_t radix = 1ULL << bits_per_pass;   //桶的个数
+	const uint64_t mask = radix - 1;   //用于取出特定段的数字
+
+	std::vector<uint64_t> temp(keys.size());    // 排序的桶
+
+	for (int pass = 0; pass < pass_num;pass++) {
+		std::vector<int> count_index(radix + 1);
+		int shift = bits_per_pass * pass;
+		for (auto key : keys) {
+			uint64_t key_masked = (key >> shift) & mask;
+			count_index[key_masked + 1]++;   //记录每个值分别有多少个，值为key的存到下标(key+1)位置，方便后面求每个值的起始下标
+		}
+
+		// 统计各值起始位置
+		for (uint64_t i = 1;i < radix;i++) {
+			count_index[i] += count_index[i - 1];
+		}
+
+		// 把数字放进temp数组中，完成一趟基数排序
+		for (auto key : keys) {
+			uint64_t key_masked = (key >> shift) & mask;
+			temp[count_index[key_masked]] = key;
+			count_index[key_masked]++;
+		}
+
+		keys.swap(temp);
+	}
 	return;
 }

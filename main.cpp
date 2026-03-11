@@ -160,7 +160,9 @@ int main() {
 	std::cout << "[" << std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_begin).count() << "ms] keyÓ³ÉäÍê³É \n";
 	
 	//ÅÅĞò
-	std::sort(keys.begin(), keys.end());
+	//std::sort(keys.begin(), keys.end());
+	RadixSort64(keys);
+
 	time_end = std::chrono::steady_clock::now();
 	std::cout << "[" << std::chrono::duration_cast<std::chrono::milliseconds>(time_end - time_begin).count() << "ms] keyÅÅĞòÍê³É \n";
 

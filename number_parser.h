@@ -14,5 +14,6 @@ bool IsNumOrNot(char c);
 uint64_t GetKey(ANum& num_struct);
 void KeyParser(uint64_t key, ANum& num_struct);
 bool RoundBase(ANum& num_struct, uint16_t round);
+void RadixSort64(std::vector<uint64_t>& keys);
 
 #endif
