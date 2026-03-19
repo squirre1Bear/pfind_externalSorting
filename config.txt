@@ -1,0 +1,5 @@
+buffer_size=8388608
+run_size=25000000
+fin_path=data/data_10m.txt
+fout_errors_path=errors.txt
+fout_result_path=result.txt

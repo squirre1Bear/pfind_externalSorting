@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -105,6 +105,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -128,20 +130,32 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="number_parser.cpp">
+    <ClCompile Include="include\pfind_external_sorting\app.h" />
+    <ClCompile Include="src\config_loader.cpp" />
+    <ClCompile Include="src\file_reader.cpp" />
+    <ClCompile Include="src\app.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)%(Filename).obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="src\memory_usage.cpp" />
+    <ClCompile Include="src\radix_sort.cpp" />
+    <ClCompile Include="src\number_parser.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\run_merger.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\Python_Projects\drawPictures\.venv\data_10m.txt" />
-    <Text Include="errors.txt" />
-    <Text Include="result.txt" />
-    <Text Include="test1.txt" />
-    <Text Include="test2.txt" />
+    <ClInclude Include="include\pfind_external_sorting\config_loader.h" />
+    <ClInclude Include="include\pfind_external_sorting\io\file_reader.h" />
+    <ClInclude Include="include\pfind_external_sorting\monitor\memory_usage.h" />
+    <ClInclude Include="include\pfind_external_sorting\model.h" />
+    <ClInclude Include="include\pfind_external_sorting\sort\radix_sort.h" />
+    <ClInclude Include="include\pfind_external_sorting\parser\number_parser.h" />
+    <ClInclude Include="include\pfind_external_sorting\sort\run_merger.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="number_parser.h" />
+    <Text Include="config.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

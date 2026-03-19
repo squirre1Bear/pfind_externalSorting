@@ -15,25 +15,58 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="src\main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="number_parser.cpp">
+    <ClCompile Include="src\number_parser.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\memory_usage.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\radix_sort.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\run_merger.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\app.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\file_reader.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="include\pfind_external_sorting\app.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\config_loader.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="test1.txt">
-      <Filter>资源文件</Filter>
-    </Text>
-    <Text Include="test2.txt" />
-    <Text Include="errors.txt" />
-    <Text Include="result.txt" />
-    <Text Include="..\..\Python_Projects\drawPictures\.venv\data_10m.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="number_parser.h">
+    <ClInclude Include="include\pfind_external_sorting\parser\number_parser.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="include\pfind_external_sorting\monitor\memory_usage.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pfind_external_sorting\sort\radix_sort.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pfind_external_sorting\sort\run_merger.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pfind_external_sorting\model.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pfind_external_sorting\io\file_reader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pfind_external_sorting\config_loader.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="config.txt" />
   </ItemGroup>
 </Project>
