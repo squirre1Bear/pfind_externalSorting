@@ -8,7 +8,8 @@ namespace external_sort {
 namespace model {
 
 struct ParsedNumber {
-  std::string original_string = "";
+  // 当出现错误时才需要记录原字符串，在ParsedNumber中直接记录会产生2.5亿个字符串开销
+  // std::string original_string = "";
   bool is_positive = false;
   uint64_t base = 0;
   int exponent = 0;

@@ -20,11 +20,13 @@ app::ConfigOptions ConfigLoader(std::string config_path) {
     std::istringstream line_stream(line);
     std::string key, value;
     if (std::getline(line_stream, key, '=') &&
-        getline(line_stream, value, '=')) {
-      if (key == "buffer_size") {
-        config.buffer_size = std::stoi(value);
+        getline(line_stream, value)) {
+      if (key == "io_buffer_size") {
+        config.io_buffer_size = std::stoull(value);
+      } else if (key == "total_run_buffer_size") {
+        config.total_run_buffer_size = std::stoull(value);
       } else if (key == "run_size") {
-        config.run_size = std::stoi(value);
+        config.run_size = std::stoull(value);
       } else if (key == "fin_path") {
         config.fin_path = value;
       } else if (key == "fout_errors_path") {

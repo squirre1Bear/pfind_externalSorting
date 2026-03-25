@@ -8,9 +8,11 @@
 
 namespace external_sort {
 namespace parse {
+// 初始化int—>string的表格
+void InitDigit3();  
 
 // 传入string类型的原始数字，返回解析完的ParsedNumber类型数字
-model::ParsedNumber NumberParser(std::string origin_number);
+model::ParsedNumber NumberParser(std::string_view origin_number_view);
 
 // 判断字符是否为0~9的数字，如果是则返回true
 bool IsDigit(char c);

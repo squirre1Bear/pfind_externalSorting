@@ -3,14 +3,18 @@
 namespace external_sort {
 namespace sort {
 // 64位基数排序
-void RadixSort64(std::vector<uint64_t>& keys) {
+// keys: 待排序元素数组。temp: 记录中间结果用的桶
+void RadixSort64(std::vector<uint64_t>& keys, std::vector<uint64_t>& temp) {
+  // 后面会进行keys.swap(temp)，如果长度不等，则交换后再遍历temp时会越界
+  if (temp.size() != keys.size()) temp.resize(keys.size());
+
   const int kBitsPerPass = 16;  // 每个桶包括了几位数字
   const int kPassNum = (64 + kBitsPerPass - 1) /
                        kBitsPerPass;  // 总共进行几趟基数排序，进行了向上取整
   const uint64_t kRadix = 1ULL << kBitsPerPass;  // 桶的个数
   const uint64_t mask = kRadix - 1;  // 用于取出特定段的数字
 
-  std::vector<uint64_t> temp(keys.size());  // 排序的桶
+  //std::vector<uint64_t> temp(keys.size());  // 排序的桶
 
   for (int pass = 0; pass < kPassNum; pass++) {
     std::vector<int> count_index(kRadix + 1);

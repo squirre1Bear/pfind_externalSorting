@@ -4,22 +4,19 @@
 
 namespace {
 char digit_table_3[1000][3];  // 用来将3位数字快速转换为string
-bool digit_table_initialized = false;  // digit3是否已经初始化
-
-void InitDigit3() {
-  if (digit_table_initialized) return;
-  for (int i = 0; i < 1000; i++) {
-    digit_table_3[i][0] = '0' + (i / 100);
-    digit_table_3[i][1] = '0' + (i / 10) % 10;
-    digit_table_3[i][2] = '0' + i % 10;
-  }
-  digit_table_initialized = true;
-}
 }  // namespace
 
 namespace external_sort {
 namespace parse {
 inline bool IsDigit(char c) { return c - '0' >= 0 && c - '0' <= 9; }
+
+void InitDigit3() {
+  for (int i = 0; i < 1000; i++) {
+    digit_table_3[i][0] = '0' + (i / 100);
+    digit_table_3[i][1] = '0' + (i / 10) % 10;
+    digit_table_3[i][2] = '0' + i % 10;
+  }
+}
 
 void InitParsedNumber(model::ParsedNumber& parsed_number) {
   parsed_number.is_positive = false;
@@ -27,14 +24,13 @@ void InitParsedNumber(model::ParsedNumber& parsed_number) {
   parsed_number.exponent = 0;
   parsed_number.is_standard_float = true;
   parsed_number.is_legal = true;
-  parsed_number.original_string = "";
   return;
 }
 
-model::ParsedNumber NumberParser(std::string origin_number) {
+model::ParsedNumber NumberParser(std::string_view origin_number_view) {
   model::ParsedNumber parsed_number{};
-  const char* begin_ptr = origin_number.data();
-  const char* end_ptr = begin_ptr + origin_number.size();
+  const char* begin_ptr = origin_number_view.data();
+  const char* end_ptr = begin_ptr + origin_number_view.size();
 
   const char* cur_ptr = begin_ptr;
   int decimal_point_index = -1;
@@ -195,7 +191,7 @@ model::ParsedNumber NumberParser(std::string origin_number) {
       while (cur_ptr < end_ptr) {
         if (IsDigit(*cur_ptr)) {
           parsed_number.exponent *= 10;
-          parsed_number.exponent -= static_cast<uint64_t>((*cur_ptr) - '0');
+          parsed_number.exponent -= static_cast<int>((*cur_ptr) - '0');
           cur_ptr++;
         } else {
           parsed_number.is_legal = false;
@@ -213,7 +209,7 @@ model::ParsedNumber NumberParser(std::string origin_number) {
       while (cur_ptr < end_ptr) {
         if (IsDigit(*cur_ptr)) {
           parsed_number.exponent *= 10;
-          parsed_number.exponent += static_cast<uint64_t>((*cur_ptr) - '0');
+          parsed_number.exponent += static_cast<int>((*cur_ptr) - '0');
           cur_ptr++;
         } else {
           parsed_number.is_legal = false;
@@ -253,6 +249,12 @@ model::ParsedNumber NumberParser(std::string origin_number) {
   // 底数补齐10位             //1e9
   while (parsed_number.base < 1'000'000'000ULL && parsed_number.base != 0) {
     parsed_number.base *= 10;
+  }
+
+  // 指数合法性检查
+  if (parsed_number.exponent < -999 || parsed_number.exponent > 999) {
+    parsed_number.is_legal = false;
+    return parsed_number;
   }
 
   return parsed_number;
@@ -321,47 +323,64 @@ void KeyParser(uint64_t key, model::ParsedNumber& num_struct) {
 }
 
 // 获取格式化后的数字
-void GetFormattedNumber(char* formatted_num, uint64_t key) {
-  InitDigit3();
+// 参数: char* formatted_num, 存储格式化后的数字，用于输出
+//       uint64_t key. 数字对应的key
+void GetFormattedNumber(char* formatted_number, uint64_t key) {
+  // 在本函数直接进行key的解析，避免声明parsednumber、调用一次函数
+  // 从key解析底数、指数
+  uint64_t kMaxExpBase = (1ULL << 63) - 1;
+  uint64_t kBaseMask = (1ULL << 52) - 1;
+  uint64_t exp_mask = ((1ULL << 63) - 1) - kBaseMask;
+  uint64_t kMod1E9 = 1'000'000'000;
 
-  model::ParsedNumber num_struct;
-  KeyParser(key, num_struct);
+  bool is_positive = true;
+  uint64_t base;
+  int exponent;
 
-  int kMod1E9 = 1'000'000'000;
-  if (num_struct.base == 0) {
-    memcpy(formatted_num, "+0.000000000E+000\n", 18);  // 单独输出+0E+0
-    return;
+  if (key >= (1ULL << 63)) {  // 原值为正数
+    is_positive = true;
+    base = key & kBaseMask;
   } else {
-    // 采用格式化后的char数组一次写入最终结果
-    short int_part = num_struct.base / kMod1E9;        // 底数的整数部分
-    uint64_t factor_part = num_struct.base % kMod1E9;  // 底数的小数部分
+    is_positive = false;
+    key = kMaxExpBase - key;
+    base = key & kBaseMask;
+  }
+  exponent = ((key & exp_mask) >> 52) - 1000;
+
+   if (base == 0) {
+     memcpy(formatted_number, "+0.000000000E+000\n", 18);  // 单独输出+0E+0
+     return;
+   } else {
+     // 采用格式化后的char数组一次写入最终结果
+     uint32_t int_part = base / kMod1E9;        // 底数的整数部分
+     uint32_t factor_part = base % kMod1E9;  // 底数的小数部分
 
     // 格式化后共17个字符，再补上'\n'，总计18个字符。
-    formatted_num[0] = (num_struct.is_positive == 0) ? '-' : '+';
-    formatted_num[1] = '0' + int_part;
-    formatted_num[2] = '.';
+    formatted_number[0] = (is_positive == 0) ? '-' : '+';
+    formatted_number[1] = '0' + int_part;
+    formatted_number[2] = '.';
 
     // 查表获取string类型的小数部分
     uint64_t high3 = factor_part / 1'000'000;  // 高三位
     uint64_t mid3 = (factor_part / 1000) % 1000;
     uint64_t low3 = factor_part % 1000;  // 低三位
 
-    memcpy(formatted_num + 3, digit_table_3[high3], 3);
-    memcpy(formatted_num + 6, digit_table_3[mid3], 3);
-    memcpy(formatted_num + 9, digit_table_3[low3], 3);
+    memcpy(formatted_number + 3, digit_table_3[high3], 3);
+    memcpy(formatted_number + 6, digit_table_3[mid3], 3);
+    memcpy(formatted_number + 9, digit_table_3[low3], 3);
 
-    formatted_num[12] = 'E';
-    formatted_num[13] = (num_struct.exponent >= 0) ? '+' : '-';
-    int abs_exp = num_struct.exponent;
+    formatted_number[12] = 'E';
+    formatted_number[13] = (exponent >= 0) ? '+' : '-';
+    int abs_exp = exponent;
     if (abs_exp < 0)  // 对指数取绝对值，便于写入数组
       abs_exp = -abs_exp;
 
     // 查表获取string类型的指数
-    memcpy(formatted_num + 14, digit_table_3[abs_exp], 3);
+    memcpy(formatted_number + 14, digit_table_3[abs_exp], 3);
 
-    formatted_num[17] = '\n';
+    formatted_number[17] = '\n';
   }
-  return;
+   return;
 }
 
 }  // namespace parse

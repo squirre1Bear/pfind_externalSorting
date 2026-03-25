@@ -12,31 +12,38 @@
 
 namespace external_sort {
 namespace sort {
-void MergeSort(int k, uint64_t buffer_size, std::ofstream& fout_result) {
+void MergeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
   std::vector<std::ifstream> run_files;  // 存储k个bin文件输入流
   run_files.reserve(k);
 
   // 记录k个文件的ifstream
-  char run_path[12];
+  char run_path[16];
   for (int i = 0; i < k; i++) {
-    snprintf(run_path, 12, "run_%03d.bin", i + 1);
+    snprintf(run_path, 16, "tmp/run_%03d.bin", i + 1);
     run_files.emplace_back(run_path, std::ios::binary);
     if (!run_files.back()) {
-      std::cerr << "bin文件打开失败";
+      std::cerr << "bin文件打开失败！\n";
       return;
     }
   }
 
+  if (k == 0) {
+    std::cout << "所有数字均不合法！\n";
+    return;
+  }
+  uint64_t bytes_pre_run = total_run_buffer_size / k;
+
   // 向缓存中读取数据
   std::vector<std::vector<uint64_t>> input_buffer(
       k,
-      std::vector<uint64_t>(buffer_size / sizeof(uint64_t)));  // 读取数据的缓冲
+      std::vector<uint64_t>(bytes_pre_run /
+                            sizeof(uint64_t)));  // 读取数据的缓冲
   std::vector<int> valid_num(k, 0);  // k个缓冲中，分别读入了多少个数字
   std::vector<int> buffer_cursor(k, 0);  // 指向每一个文件下一个读入的数
 
   for (int i = 0; i < k; i++) {
     run_files[i].read(reinterpret_cast<char*>(input_buffer[i].data()),
-                      buffer_size);
+                      bytes_pre_run);
     valid_num[i] = run_files[i].gcount() / sizeof(uint64_t);
   }
 
@@ -65,7 +72,11 @@ void MergeSort(int k, uint64_t buffer_size, std::ofstream& fout_result) {
 
     // 如果缓存满了，则进行一次写入
     if (buffered_count >= max_buffer_num) {
-      fout_result.write(buffer_out.data(), buffer_out.size());
+      if (fwrite(buffer_out.data(), 1, buffer_out.size(), fout_result) !=
+          buffer_out.size()) {
+        std::cerr << "result文件写入失败！\n";
+        return;
+      }
       buffered_count = 0;
     }
 
@@ -77,7 +88,7 @@ void MergeSort(int k, uint64_t buffer_size, std::ofstream& fout_result) {
     if (buffer_cursor[file_index] >= valid_num[file_index]) {
       run_files[file_index].read(
           reinterpret_cast<char*>(input_buffer[file_index].data()),
-          buffer_size);
+          bytes_pre_run);
       valid_num[file_index] = run_files[file_index].gcount() / sizeof(uint64_t);
 
       if (valid_num[file_index] != 0) {  // 读入成功
@@ -95,7 +106,13 @@ void MergeSort(int k, uint64_t buffer_size, std::ofstream& fout_result) {
 
   // 把缓存中剩下的部分输出
   if (buffered_count != 0) {
-    fout_result.write(buffer_out.data(), 18 * buffered_count);
+    if (fwrite(buffer_out.data(), 1, 18 * buffered_count, fout_result) !=
+        18 * buffered_count) {  // 注意buffer_out没有满，写入量不是
+                                // buffer_out.size()！
+      std::cerr << "result文件写入失败！\n";
+      return;
+    }
+
     buffered_count = 0;
     std::vector<char>().swap(buffer_out);
   }
@@ -103,5 +120,149 @@ void MergeSort(int k, uint64_t buffer_size, std::ofstream& fout_result) {
   return;
 }
 
+void LosserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
+  if (k == 0) {
+    std::cout << "数据集中没有数字合法！\n";
+    return;
+  }
+
+  std::vector<std::ifstream> run_files;  // 存储k个bin文件输入流
+  run_files.reserve(k);
+
+  // 记录k个文件的ifstream
+  char run_path[16];
+  for (int i = 0; i < k; i++) {
+    snprintf(run_path, 16, "tmp/run_%03d.bin", i + 1);
+    run_files.emplace_back(run_path, std::ios::binary);
+    if (!run_files.back()) {
+      std::cerr << "bin文件打开失败！\n";
+      return;
+    }
+  }
+
+  uint64_t bytes_per_run = total_run_buffer_size / k;
+  bytes_per_run = (bytes_per_run / sizeof(uint64_t)) * sizeof(uint64_t);  // 确保bytes_per_run为8的倍数，防止后面读取时越界
+  if (bytes_per_run < sizeof(uint64_t)) {
+    std::cerr << "total_run_buffer_size 太小，无法给每个 run 分到至少一个 uint64_t\n";
+    return;
+  }
+
+
+  // 初始化输入缓存，并读取数据
+  std::vector<std::vector<uint64_t>> input_buffer(
+      k,
+      std::vector<uint64_t>(bytes_per_run /
+                            sizeof(uint64_t)));  // 读取数据的缓冲
+  std::vector<int> valid_num(k, 0);  // k个缓冲中，分别读入了多少个数字
+  std::vector<int> buffer_cursor(k, 0);  // 指向每一个文件下一个读入的数
+  std::vector<uint64_t> current_number(k);  // 记录每个run当前在处理的元素。current_number[i] 等效于 (input_buffer[i][buffer_cursor[i]])
+
+  for (int i = 0; i < k; i++) {
+    run_files[i].read(reinterpret_cast<char*>(input_buffer[i].data()),
+                      bytes_per_run);
+    valid_num[i] = run_files[i].gcount() / sizeof(uint64_t);
+    current_number[i] = input_buffer[i][buffer_cursor[i]];
+  }
+  
+  
+  // 初始化输出的缓冲区
+  int max_buffer_num = 1024 * 1024;  // 缓冲区最大能存储的数字个数
+  std::vector<char> buffer_out(18 *
+                               max_buffer_num);  // 18是每个格式化数字所占byte数
+  int buffered_count = 0;  // buffer中实际存储的数字个数
+
+  // 初始化败者树
+  // 树节点为-1表示还没有初始化
+  std::vector<int> losser_tree(k, -1);
+  for (int i = 0; i < k; i++) {
+    uint64_t father = (i + k) / 2;
+    uint64_t winner_index = i;
+    while (father > 0) {
+      if (losser_tree[father] == -1) {
+        losser_tree[father] = i;
+      } else {
+        // 当前节点对应的值大于父节点对应的值，则winner为父节点
+        if (current_number[winner_index] >
+            current_number[losser_tree[father]]) {       
+          uint64_t tmp = losser_tree[father];
+          losser_tree[father] = winner_index;
+          winner_index = tmp;  
+        }
+      }
+      father = (father - 1) >> 1;  // (father-1)/2，用于找再上一级的父节点。减一是因为二叉树下标从1开始，下标0为根节点再往上的那个节点
+    }
+    // father==0，此时为根节点再往上的节点赋值
+    losser_tree[0] = winner_index;
+
+    //buffer_cursor[i]++;  每个run的首元素只进行了建树，还未输出，不能移动游标
+  }
+
+  // 输出结果 + 败者树调整
+  uint64_t file_index = losser_tree[0];  // 记录树顶元素来自哪个文件
+  // 当某个run全部读完后，设置节点为UINT64_MAX
+  while (current_number[file_index] != UINT64_MAX) {
+    parse::GetFormattedNumber(
+        buffer_out.data() + 18 * buffered_count,
+        current_number[file_index]);
+    buffered_count++;
+    buffer_cursor[file_index]++;
+
+    // 如果缓存满了，则进行一次写入
+    if (buffered_count >= max_buffer_num) {
+      if (fwrite(buffer_out.data(), 1, buffer_out.size(), fout_result) !=
+          buffer_out.size()) {
+        std::cerr << "result文件写入失败！\n";
+        return;
+      }
+      buffered_count = 0;
+    }
+
+    // 输入缓冲读完后，重新从run读入数据
+    if (buffer_cursor[file_index] >= valid_num[file_index]) {
+      run_files[file_index].read(
+          reinterpret_cast<char*>(input_buffer[file_index].data()) ,
+          bytes_per_run);
+      valid_num[file_index] = run_files[file_index].gcount() / sizeof(uint64_t);
+      
+      // 如果没元素可读入，则塞入UINT64_MAX，保证只在整棵败者树只有UINT64_MAX的时候才输出，此时表示排序结束
+      if (valid_num[file_index] == 0) {
+        input_buffer[file_index][0] = UINT64_MAX;
+      }
+      buffer_cursor[file_index] = 0;
+    }
+    current_number[file_index] =
+        input_buffer[file_index][buffer_cursor[file_index]];
+
+
+    // 败者树调整
+    uint64_t father = (file_index + k) / 2;
+    uint64_t winner_index = file_index;   // 记录当前胜者来自几号文件
+    while (father > 0) {
+      if (current_number[winner_index] > current_number[losser_tree[father]]) {
+        uint64_t tmp = losser_tree[father];
+        losser_tree[father] = winner_index;
+        winner_index = tmp;  
+      }
+      father = (father - 1) >> 1;
+    }
+    // father为零的时候，调整根节点再往上的那个节点
+    losser_tree[0] = winner_index;
+    file_index = losser_tree[0];
+  }
+
+    // 把缓存中剩下的部分输出
+  if (buffered_count != 0) {
+    if (fwrite(buffer_out.data(), 1, 18 * buffered_count, fout_result) !=
+        18 * buffered_count) {  // 注意buffer_out没有满，写入量不是 buffer_out.size()！
+      std::cerr << "result文件写入失败！\n";
+      return;
+    }
+
+    buffered_count = 0;
+    std::vector<char>().swap(buffer_out);
+  }
+
+  return;
+}
 }  // namespace sort
 }  // namespace external_sort

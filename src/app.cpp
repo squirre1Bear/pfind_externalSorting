@@ -13,13 +13,14 @@ namespace external_sort {
 namespace app {
 ExternalSortApp::ExternalSortApp(ConfigOptions cfg)
     : options_(cfg),
-      fout_errors_buffer_(cfg.buffer_size),
-      fout_result_buffer_(cfg.buffer_size),
-      buffer_size_(cfg.buffer_size),
+      fout_errors_buffer_(cfg.io_buffer_size),
+      fout_result_buffer_(cfg.io_buffer_size),
+      io_buffer_size_(cfg.io_buffer_size),
+      total_run_buffer_size_(cfg.total_run_buffer_size),
       run_size_(cfg.run_size),
       fin_path_(cfg.fin_path),
       fout_errors_path_(cfg.fout_errors_path),
-      fout_result_path_(cfg.fout_result_path) {}
+      fout_result_path_(cfg.fout_result_path){}
 
 int ExternalSortApp::Run() {
   // 注意，C++中后定义的对象先释放内存。如果out_buffer在fout之后定义，则会在fout关闭前就被释放，fout会因找不到buffer地址而报错！
@@ -27,7 +28,7 @@ int ExternalSortApp::Run() {
   int total_run = 0;  // 记录生成了多少个run
 
   io::InputFileReader file_reader(fin_path_, fout_errors_path_,
-                                  fout_result_path_, buffer_size_);
+                                  fout_result_path_, io_buffer_size_);
 
   if (!file_reader.OpenFiles()) return 1;
   if (!file_reader.GetBuffer()) return 1;
@@ -38,11 +39,9 @@ int ExternalSortApp::Run() {
   std::vector<uint64_t>
       keys;  // 存储每个数映射后的结果。保证key越大时，原数值越大，且可通过key倒推原值。
   keys.reserve(run_size_);
-  external_sort::model::ParsedNumber num_struct;
+  std::vector<uint64_t> radix_sort_buffer(run_size_);
 
-  bool is_eof = false;     // 是否读到文件结尾
   std::string first_half;  // 记录被块截断的半行字符
-  std::vector<char> block_buffer(buffer_size_);
 
   time_end = std::chrono::steady_clock::now();
   std::cout << "["
@@ -53,7 +52,7 @@ int ExternalSortApp::Run() {
   // 按块循环读入数据
   while (1) {
     // 读入一块数据
-    int bytes_get = file_reader.GetBlock();
+    uint64_t bytes_get = file_reader.GetBlock();
     if (bytes_get == 0) break;
 
     // 处理前一块留下的半个数字
@@ -65,14 +64,14 @@ int ExternalSortApp::Run() {
           *opt_parsed_number;  // opt_parsed_number为
                                // std::optional<ParsedNumber>类型，需要先用*提出里面的值
       if (!parsed_number.is_legal) {
-        file_reader.WriteToErrors(parsed_number.original_string);
+        file_reader.WriteToErrors(file_reader.GetCompelteFirstHalfNumber());
       } else {
         uint64_t key = parse::GetKey(parsed_number);
         keys.push_back(key);
 
         // 如果缓冲区满了，则排序后写入 .bin文件
         if (keys.size() >= run_size_) {
-          sort::RadixSort64(keys);
+          sort::RadixSort64(keys, radix_sort_buffer);
           if (!file_reader.GenerateBin(++total_run, keys)) return 1;
           keys.clear();
         }
@@ -80,23 +79,26 @@ int ExternalSortApp::Run() {
     }
 
     // 按行处理块内剩余的数字
+    std::string_view original_string_view;
     while (!file_reader.EndOfBlock()) {
-      std::string original_string = file_reader.ReadLine();
+      // [修改] 直接返回字符串时，每次都会复制一次字符串。需要改为零拷贝读取
+      //std::string original_string = file_reader.ReadLine();
+      original_string_view = file_reader.ReadLine();
 
-      // 已经读完整个块的内容。（已在ReadALine()中 存储了没处理的半段数字）
-      if (original_string.empty()) break;
+      // 已经读完整个块的内容。（没处理的半段数字已在ReadLine()中被存入first_half_）
+      if (original_string_view.empty()) break;
 
       model::ParsedNumber parsed_number;
-      parsed_number = parse::NumberParser(original_string);
+      parsed_number = parse::NumberParser(original_string_view);
 
       if (!parsed_number.is_legal) {
-        file_reader.WriteToErrors(original_string);
+        file_reader.WriteToErrors(original_string_view);
       } else {
         uint64_t key = parse::GetKey(parsed_number);
         keys.push_back(key);
         // 如果缓冲区满了，则排序后写入 .bin文件
         if (keys.size() >= run_size_) {
-          sort::RadixSort64(keys);
+          sort::RadixSort64(keys, radix_sort_buffer);
           if (!file_reader.GenerateBin(++total_run, keys)) return 1;
           keys.clear();
         }
@@ -119,16 +121,16 @@ int ExternalSortApp::Run() {
   }
 
   // 将最后一组数据 排序后 写入 .bin文件
-  sort::RadixSort64(keys);
-  if (!file_reader.GenerateBin(++total_run, keys)) return 1;
+  if (!keys.empty()) {
+    sort::RadixSort64(keys, radix_sort_buffer);
+    if (!file_reader.GenerateBin(++total_run, keys)) return 1;
 
-  std::vector<uint64_t>().swap(keys);  // 释放keys空间
+    std::vector<uint64_t>().swap(keys);  // 释放keys空间
+  }
 
-  // time_end = std::chrono::steady_clock::now();
-  // std::cout << "[" <<
-  // std::chrono::duration_cast<std::chrono::milliseconds>(time_end -
-  // time_begin).count() << "ms] " << total_run << "个bin文件生成完成
-  // \n开始归并排序\n";
+  // 释放空间
+  std::vector<uint64_t>().swap(radix_sort_buffer);
+
   time_end = std::chrono::steady_clock::now();
   std::cout << "["
             << std::chrono::duration_cast<std::chrono::milliseconds>(time_end -
@@ -136,8 +138,11 @@ int ExternalSortApp::Run() {
                    .count()
             << "ms] 开始归并排序\n";
 
+  // 初始化从int->string的表格
+  external_sort::parse::InitDigit3();
+  
   // 归并排序并写入result.txt
-  external_sort::sort::MergeSort(total_run, buffer_size_,
+  external_sort::sort::LosserTreeSort(total_run, total_run_buffer_size_,
                                  file_reader.GetResultStream());
 
   time_end = std::chrono::steady_clock::now();

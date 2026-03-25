@@ -8,8 +8,8 @@ namespace external_sort {
 namespace sort {
 
 // 进行uint64_t类型容器的基数排序
-// 传入待排序的vector<uint64_t>指针，无返回值
-void RadixSort64(std::vector<uint64_t>& keys);
+// 传入待排序的vector<uint64_t>指针，和大小为keys.size()的temp用于记录中间结果。无返回值
+void RadixSort64(std::vector<uint64_t>& keys, std::vector<uint64_t>& temp);
 
 }  // namespace sort
 }  // namespace external_sort
