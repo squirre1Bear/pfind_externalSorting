@@ -24,11 +24,17 @@ InputFileReader::InputFileReader(std::string fin_path,
       first_half_number_(""),
       block_begin_(fin_buffer_.data()),
       block_cursor_(fin_buffer_.data()),
+      fin_(nullptr),
       fout_errors_(nullptr),
       fout_result_(nullptr),
       block_end_(fin_buffer_.data()) {}
 
 InputFileReader::~InputFileReader() {
+  if (fin_) {
+    fflush(fin_);
+    fclose(fin_);
+    fin_ = nullptr;
+  }
   if (fout_errors_) {
     fflush(fout_errors_);
     fclose(fout_errors_);
@@ -42,8 +48,8 @@ InputFileReader::~InputFileReader() {
 }
 
 bool InputFileReader::OpenFiles() {
-  fin_.open(fin_path_);
-    // 采用c中FILE*加速文件读写
+  // 采用c中FILE*加速文件读写
+  fin_ = fopen(fin_path_.c_str(), "rb");
   fout_errors_ = fopen(fout_errors_path_.c_str(), "wb");
   fout_result_ = fopen(fout_result_path_.c_str(), "wb");
   if (!(fin_ && fout_errors_ && fout_result_)) {
@@ -69,25 +75,38 @@ bool InputFileReader::GetBuffer() {
 
 // 读入一块数据，并返回实际读入的字节数
 uint64_t InputFileReader::GetBlock() {
-  fin_.read(fin_buffer_.data(), fin_buffer_.size());
+  uint64_t bytes_read = fread(fin_buffer_.data(), 1, fin_buffer_.size(), fin_);
   block_begin_ = fin_buffer_.data();
   block_cursor_ = fin_buffer_.data();
-  block_end_ = fin_buffer_.data() + fin_.gcount();
-  return fin_.gcount();
+  block_end_ = fin_buffer_.data() + bytes_read;
+  return bytes_read;
 }
 
 std::optional<model::ParsedNumber> InputFileReader::ParseFirstHalfNumber() {
   while (block_cursor_ != block_end_) {
     if (*block_cursor_ == '\n') {
+      // 处理windows二进制打开的如下情况：12345\r [截断] \n
+      if (first_half_number_.back() == '\r') {
+        first_half_number_.pop_back();  // 删去'\r'
+      }
+      // 处理 [截断] 6789\r\n
+      bool trim_r = false;   //记录是否跳过了\r，如果为true，则最后移动游标时挪动两位，以跳过 \r\n
+      if (*(block_cursor_ - 1) == '\r') {
+        trim_r = true;
+        --block_cursor_;
+      }
+
       // 直接对complete_first_half_number_赋值，避免声明新的字符串
       complete_first_half_number_.clear();
       complete_first_half_number_.reserve(first_half_number_.size() +
                                           (block_cursor_ - block_begin_));
+
       complete_first_half_number_.append(first_half_number_);
       complete_first_half_number_.append(block_begin_, block_cursor_);
      
       first_half_number_.clear();
       parsed_num_ = parse::NumberParser(complete_first_half_number_);
+      if (trim_r == true) ++block_cursor_;  // 跳过'\r'
       ++block_cursor_;  // 跳过'\n'
 
       return parsed_num_;
@@ -109,9 +128,16 @@ std::string_view InputFileReader::ReadLine(bool& is_empty_line) {
 
   if (p != nullptr) {
     if (p == block_cursor_) is_empty_line = true;
-    std::string_view sv(block_cursor_, p - block_cursor_);
+
+    std::string_view sv;
+    if (*(p - 1) == '\r') {   // 去除windows binary模式下 换行符被解析为 \r\n
+      sv = std::string_view(block_cursor_, p - 1 - block_cursor_);
+    } else {
+      sv = std::string_view(block_cursor_, p - block_cursor_);
+    }
     block_cursor_ = ++p;
     return sv;
+
   } else {  // in_buffer_中没有下一个换行符了，需要将后半段存入first_half
     std::string_view sv(block_cursor_, block_end_ - block_cursor_);   // 注意此时 p为空指针，长度不能用p-block_cursor_
     first_half_number_ = sv;

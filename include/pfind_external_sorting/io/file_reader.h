@@ -2,9 +2,11 @@
 #define EXTERNAL_SORT_IO_FILE_READER_H_
 
 #include <cstdio>
+#include <cstdint>
 #include <fstream>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "pfind_external_sorting/model.h"
@@ -37,7 +39,7 @@ class InputFileReader {
   std::vector<char> fout_errors_buffer_;
   std::vector<char> fout_result_buffer_;
 
-  std::ifstream fin_;
+  FILE* fin_;
   FILE* fout_errors_;
   FILE* fout_result_;
 
