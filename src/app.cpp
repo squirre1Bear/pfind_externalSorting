@@ -84,10 +84,11 @@ int ExternalSortApp::Run() {
     while (!file_reader.EndOfBlock()) {
       // [修改] 直接返回字符串时，每次都会复制一次字符串。需要改为零拷贝读取
       // std::string original_string = file_reader.ReadLine();
-      original_string_view = file_reader.ReadLine();
+      bool is_empty_line = false;   // 不加该判断时，original_string_view.empty() 会将空行也识别为块结束
+      original_string_view = file_reader.ReadLine(is_empty_line);
 
       // 已经读完整个块的内容。（没处理的半段数字已在ReadLine()中被存入first_half_）
-      if (original_string_view.empty()) break;
+      if (original_string_view.empty() && !is_empty_line) break;
 
       // 直接通过当前行解析出key，避免构造ParsedNumber
       uint64_t key;
@@ -119,19 +120,19 @@ int ExternalSortApp::Run() {
         // }
       }
     }
+  }
 
-    // 处理读完所有内容后剩下的半段数字
-    first_half = file_reader.GetFirstHalfNumber();
-    if (!first_half.empty()) {
-      model::ParsedNumber parsed_number;
-      parsed_number = parse::NumberParser(first_half);
+  // 处理读完所有内容后剩下的半段数字
+  first_half = file_reader.GetFirstHalfNumber();
+  if (!first_half.empty()) {
+    model::ParsedNumber parsed_number;
+    parsed_number = parse::NumberParser(first_half);
 
-      if (!parsed_number.is_legal) {
-        file_reader.WriteToErrors(first_half);
-      } else {
-        uint64_t key = parse::GetKey(parsed_number);
-        keys.push_back(key);
-      }
+    if (!parsed_number.is_legal) {
+      file_reader.WriteToErrors(first_half);
+    } else {
+      uint64_t key = parse::GetKey(parsed_number);
+      keys.push_back(key);
     }
   }
 
@@ -157,7 +158,9 @@ int ExternalSortApp::Run() {
   external_sort::parse::InitDigit3();
 
   // 归并排序并写入result.txt
-  external_sort::sort::LosserTreeSort(total_run, total_run_buffer_size_,
+  //external_sort::sort::MergeSort(total_run, total_run_buffer_size_,
+  //                               file_reader.GetResultStream());
+  external_sort::sort::LoserTreeSort(total_run, total_run_buffer_size_,
                                       file_reader.GetResultStream());
 
   time_end = std::chrono::steady_clock::now();

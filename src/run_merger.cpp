@@ -120,7 +120,9 @@ void MergeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
   return;
 }
 
-void LosserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
+// 使用败者树进行归并
+// k为run的数量
+void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
   if (k == 0) {
     std::cout << "数据集中没有数字合法！\n";
     return;
@@ -155,14 +157,19 @@ void LosserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
                             sizeof(uint64_t)));  // 读取数据的缓冲
   std::vector<int> valid_num(k, 0);  // k个缓冲中，分别读入了多少个数字
   std::vector<int> buffer_cursor(k, 0);  // 指向每一个文件下一个读入的数
-  std::vector<uint64_t> current_number(k);  // 记录每个run当前在处理的元素。current_number[i] 等效于 (input_buffer[i][buffer_cursor[i]])
+  std::vector<uint64_t> current_number(k+1);  // 记录每个run当前在处理的元素。current_number[k]=0作为哨兵，仅用于初始化树。
 
   for (int i = 0; i < k; i++) {
     run_files[i].read(reinterpret_cast<char*>(input_buffer[i].data()),
                       bytes_per_run);
     valid_num[i] = run_files[i].gcount() / sizeof(uint64_t);
-    current_number[i] = input_buffer[i][buffer_cursor[i]];
+    if (valid_num[i] == 0) {  // 当前run为空，节点设置为UINT64_MAX，不参与败者树比较
+      current_number[i] = UINT64_MAX;
+    } else {
+      current_number[i] = input_buffer[i][0];
+    }
   }
+  current_number[k] = 0;
   
   
   // 初始化输出的缓冲区
@@ -172,35 +179,34 @@ void LosserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
   int buffered_count = 0;  // buffer中实际存储的数字个数
 
   // 初始化败者树
-  // 树节点为-1表示还没有初始化
-  std::vector<int> losser_tree(k, -1);
-  for (int i = 0; i < k; i++) {
+  // loser_tree中存储败者来自几号文件
+  // 所有节点初始化为 k，表示指向值为0的哨兵
+  std::vector<int> loser_tree(k, k);
+  for (int i = k-1; i >= 0; i--) {
     uint64_t father = (i + k) / 2;
     uint64_t winner_index = i;
     while (father > 0) {
-      if (losser_tree[father] == -1) {
-        losser_tree[father] = i;
-      } else {
-        // 当前节点对应的值大于父节点对应的值，则winner为父节点
-        if (current_number[winner_index] >
-            current_number[losser_tree[father]]) {       
-          uint64_t tmp = losser_tree[father];
-          losser_tree[father] = winner_index;
-          winner_index = tmp;  
-        }
+      // 当前节点对应的值大于父节点对应的值，则winner为父节点
+      if (current_number[winner_index] >
+          current_number[loser_tree[father]]) {    
+        uint64_t tmp = loser_tree[father];
+        loser_tree[father] = winner_index;
+        winner_index = tmp;  
       }
-      father = (father - 1) >> 1;  // (father-1)/2，用于找再上一级的父节点。减一是因为二叉树下标从1开始，下标0为根节点再往上的那个节点
+      father >>= 1;  // father/2，用于找再上一级的父节点
     }
     // father==0，此时为根节点再往上的节点赋值
-    losser_tree[0] = winner_index;
+    loser_tree[0] = winner_index;
 
     //buffer_cursor[i]++;  每个run的首元素只进行了建树，还未输出，不能移动游标
   }
 
   // 输出结果 + 败者树调整
-  uint64_t file_index = losser_tree[0];  // 记录树顶元素来自哪个文件
+  uint64_t file_index = loser_tree[0];  // 记录树顶元素来自哪个文件
   // 当某个run全部读完后，设置节点为UINT64_MAX
-  while (current_number[file_index] != UINT64_MAX) {
+  while (true) {
+    if (current_number[file_index] == UINT64_MAX) break;
+
     parse::GetFormattedNumber(
         buffer_out.data() + 18 * buffered_count,
         current_number[file_index]);
@@ -220,34 +226,36 @@ void LosserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
     // 输入缓冲读完后，重新从run读入数据
     if (buffer_cursor[file_index] >= valid_num[file_index]) {
       run_files[file_index].read(
-          reinterpret_cast<char*>(input_buffer[file_index].data()) ,
+          reinterpret_cast<char*>(input_buffer[file_index].data()),
           bytes_per_run);
       valid_num[file_index] = run_files[file_index].gcount() / sizeof(uint64_t);
-      
-      // 如果没元素可读入，则塞入UINT64_MAX，保证只在整棵败者树只有UINT64_MAX的时候才输出，此时表示排序结束
-      if (valid_num[file_index] == 0) {
-        input_buffer[file_index][0] = UINT64_MAX;
-      }
       buffer_cursor[file_index] = 0;
     }
-    current_number[file_index] =
-        input_buffer[file_index][buffer_cursor[file_index]];
+    
+    // 如果没元素可读入，则塞入UINT64_MAX，表示该路排序结束
+    // 保证只在整棵树只有UINT64_MAX的时候才输出，此时表示排序结束
+    if (valid_num[file_index] == 0) {
+      current_number[file_index] = UINT64_MAX;
+    } else {
+      current_number[file_index] =
+          input_buffer[file_index][buffer_cursor[file_index]];
+    }
 
 
     // 败者树调整
     uint64_t father = (file_index + k) / 2;
     uint64_t winner_index = file_index;   // 记录当前胜者来自几号文件
     while (father > 0) {
-      if (current_number[winner_index] > current_number[losser_tree[father]]) {
-        uint64_t tmp = losser_tree[father];
-        losser_tree[father] = winner_index;
+      if (current_number[winner_index] > current_number[loser_tree[father]]) {
+        uint64_t tmp = loser_tree[father];
+        loser_tree[father] = winner_index;
         winner_index = tmp;  
       }
-      father = (father - 1) >> 1;
+      father >>= 1;
     }
     // father为零的时候，调整根节点再往上的那个节点
-    losser_tree[0] = winner_index;
-    file_index = losser_tree[0];
+    loser_tree[0] = winner_index;
+    file_index = loser_tree[0];
   }
 
     // 把缓存中剩下的部分输出
@@ -264,5 +272,6 @@ void LosserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
 
   return;
 }
+
 }  // namespace sort
 }  // namespace external_sort

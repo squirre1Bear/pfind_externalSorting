@@ -24,7 +24,7 @@ class InputFileReader {
   bool GetBuffer();
   std::optional<model::ParsedNumber> ParseFirstHalfNumber();
   bool EndOfBlock();
-  std::string_view ReadLine();
+  std::string_view ReadLine(bool& is_empty_line);
   bool IsFirstHalfEmpty();
   void WriteToErrors(std::string_view str);
   bool GenerateBin(int run_number, std::vector<uint64_t>& keys);

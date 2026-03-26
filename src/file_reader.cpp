@@ -103,11 +103,12 @@ std::optional<model::ParsedNumber> InputFileReader::ParseFirstHalfNumber() {
 bool InputFileReader::EndOfBlock() { return block_cursor_ == block_end_; }
 
 // 从in_buffer_中读入一行，使用memchr代替指针手动遍历
-std::string_view InputFileReader::ReadLine() {
+std::string_view InputFileReader::ReadLine(bool& is_empty_line) {
   char* p = static_cast<char*>(
       memchr(block_cursor_, '\n', block_end_ - block_cursor_));
 
   if (p != nullptr) {
+    if (p == block_cursor_) is_empty_line = true;
     std::string_view sv(block_cursor_, p - block_cursor_);
     block_cursor_ = ++p;
     return sv;

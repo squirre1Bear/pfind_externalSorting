@@ -16,7 +16,7 @@ void MergeSort(int k, uint64_t total_run_buffer_size,
                FILE* fout_result);
 
 // 使用败者树进行排序
-void LosserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result);
+void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result);
 }  // namespace sort
 }  // namespace external_sort
 #endif
