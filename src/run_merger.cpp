@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 // 使用归并排序合并之前生成的.bin文件
 #include "pfind_external_sorting/sort/run_merger.h"
 
@@ -128,15 +130,14 @@ void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
     return;
   }
 
-
-  std::vector<std::ifstream> run_files;  // 存储k个bin文件输入流
+  std::vector<FILE*> run_files;   // 存储k个bin文件输入流，改为FILE*
   run_files.reserve(k);
 
   // 记录k个文件的ifstream
   char run_path[16];
   for (int i = 0; i < k; i++) {
     snprintf(run_path, 16, "tmp/run_%03d.bin", i + 1);
-    run_files.emplace_back(run_path, std::ios::binary);
+    run_files.emplace_back(fopen(run_path, "rb"));
     if (!run_files.back()) {
       std::cerr << "bin文件打开失败！\n";
       return;
@@ -161,9 +162,9 @@ void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
   std::vector<uint64_t> current_number(k+1);  // 记录每个run当前在处理的元素。current_number[k]=0作为哨兵，仅用于初始化树。
 
   for (int i = 0; i < k; i++) {
-    run_files[i].read(reinterpret_cast<char*>(input_buffer[i].data()),
-                      bytes_per_run);
-    valid_num[i] = run_files[i].gcount() / sizeof(uint64_t);
+    uint64_t bytes_read = fread(input_buffer[i].data(), 1, bytes_per_run, run_files[i]);
+
+    valid_num[i] = bytes_read / sizeof(uint64_t);
     if (valid_num[i] == 0) {  // 当前run为空，节点设置为UINT64_MAX，不参与败者树比较
       current_number[i] = UINT64_MAX;
     } else {
@@ -226,10 +227,10 @@ void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
 
     // 输入缓冲读完后，重新从run读入数据
     if (buffer_cursor[file_index] >= valid_num[file_index]) {
-      run_files[file_index].read(
-          reinterpret_cast<char*>(input_buffer[file_index].data()),
-          bytes_per_run);
-      valid_num[file_index] = run_files[file_index].gcount() / sizeof(uint64_t);
+      uint64_t bytes_read = fread(input_buffer[file_index].data(), 1, bytes_per_run,
+            run_files[file_index]);
+
+      valid_num[file_index] = bytes_read / sizeof(uint64_t);
       buffer_cursor[file_index] = 0;
     }
     
