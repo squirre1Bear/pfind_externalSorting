@@ -128,6 +128,7 @@ void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
     return;
   }
 
+
   std::vector<std::ifstream> run_files;  // 存储k个bin文件输入流
   run_files.reserve(k);
 

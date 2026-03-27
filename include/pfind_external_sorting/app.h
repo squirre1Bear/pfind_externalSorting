@@ -28,9 +28,6 @@ class ExternalSortApp {
  private:
   ConfigOptions options_;
 
-  std::vector<char> fout_errors_buffer_;
-  std::vector<char> fout_result_buffer_;
-
   std::string fin_path_;
   std::string fout_errors_path_;
   std::string fout_result_path_;
@@ -38,8 +35,6 @@ class ExternalSortApp {
   uint64_t io_buffer_size_;
   uint64_t total_run_buffer_size_;
   uint64_t run_size_;
-
-  std::vector<uint64_t> keys_;
 };
 
 }  // namespace app

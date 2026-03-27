@@ -14,7 +14,8 @@ namespace external_sort {
 namespace io {
 InputFileReader::InputFileReader(std::string fin_path,
                                  std::string fout_errors_path,
-                                 std::string fout_result_path, uint64_t buffer_size)
+                                 std::string fout_result_path,
+                                 uint64_t buffer_size)
     : fin_path_(fin_path),
       fout_errors_path_(fout_errors_path),
       fout_result_path_(fout_result_path),
@@ -60,7 +61,8 @@ bool InputFileReader::OpenFiles() {
 }
 
 bool InputFileReader::GetBuffer() {
-  if (setvbuf(fout_errors_, fout_errors_buffer_.data(), _IOFBF,  // 采用全缓冲_IOFBF，缓冲区满了再进行写入操作
+  if (setvbuf(fout_errors_, fout_errors_buffer_.data(),
+              _IOFBF,  // 采用全缓冲_IOFBF，缓冲区满了再进行写入操作
               fout_errors_buffer_.size()) != 0) {
     std::cerr << "缓冲区获取失败！\n";
     return false;
@@ -90,7 +92,8 @@ std::optional<model::ParsedNumber> InputFileReader::ParseFirstHalfNumber() {
         first_half_number_.pop_back();  // 删去'\r'
       }
       // 处理 [截断] 6789\r\n
-      bool trim_r = false;   //记录是否跳过了\r，如果为true，则最后移动游标时挪动两位，以跳过 \r\n
+      bool trim_r = false;  // 记录是否跳过了\r，如果为true，则最后移动游标时挪动两位，以跳过
+                            // \r\n
       if (*(block_cursor_ - 1) == '\r') {
         trim_r = true;
         --block_cursor_;
@@ -103,11 +106,11 @@ std::optional<model::ParsedNumber> InputFileReader::ParseFirstHalfNumber() {
 
       complete_first_half_number_.append(first_half_number_);
       complete_first_half_number_.append(block_begin_, block_cursor_);
-     
+
       first_half_number_.clear();
       parsed_num_ = parse::NumberParser(complete_first_half_number_);
       if (trim_r == true) ++block_cursor_;  // 跳过'\r'
-      ++block_cursor_;  // 跳过'\n'
+      ++block_cursor_;                      // 跳过'\n'
 
       return parsed_num_;
     }
@@ -130,7 +133,7 @@ std::string_view InputFileReader::ReadLine(bool& is_empty_line) {
     if (p == block_cursor_) is_empty_line = true;
 
     std::string_view sv;
-    if (*(p - 1) == '\r') {   // 去除windows binary模式下 换行符被解析为 \r\n
+    if (*(p - 1) == '\r') {  // 去除windows binary模式下 换行符被解析为 \r\n
       sv = std::string_view(block_cursor_, p - 1 - block_cursor_);
     } else {
       sv = std::string_view(block_cursor_, p - block_cursor_);
@@ -139,15 +142,18 @@ std::string_view InputFileReader::ReadLine(bool& is_empty_line) {
     return sv;
 
   } else {  // in_buffer_中没有下一个换行符了，需要将后半段存入first_half
-    std::string_view sv(block_cursor_, block_end_ - block_cursor_);   // 注意此时 p为空指针，长度不能用p-block_cursor_
+    std::string_view sv(
+        block_cursor_,
+        block_end_ -
+            block_cursor_);  // 注意此时 p为空指针，长度不能用p-block_cursor_
     first_half_number_ = sv;
     block_cursor_ = block_end_;
     return {};
   }
 }
 
-std::string& InputFileReader::GetFirstHalfNumber() { 
-    return first_half_number_; 
+std::string& InputFileReader::GetFirstHalfNumber() {
+  return first_half_number_;
 }
 
 std::string& InputFileReader::GetCompelteFirstHalfNumber() {
@@ -170,16 +176,27 @@ bool InputFileReader::GenerateBin(int run_number, std::vector<uint64_t>& keys) {
   }
   char bin_filename[16];
   snprintf(bin_filename, 16, "tmp/run_%03d.bin", run_number);
-  
-  std::ofstream fout_bin(bin_filename, std::ios::binary);
+
+  FILE* fout_bin = fopen(bin_filename, "wb");
   if (!fout_bin) {
     std::cerr << "bin文件打开失败！\n";
     return false;
   }
-  fout_bin.write(reinterpret_cast<const char*>(keys.data()),
-                 keys.size() * sizeof(uint64_t));
+
+  uint64_t written_bytes;
+  written_bytes = fwrite(reinterpret_cast<const char*>(keys.data()), 1,
+                         sizeof(uint64_t) * keys.size(), fout_bin);
+  if (written_bytes != keys.size() * sizeof(uint64_t)) {
+    std::cerr << "bin文件写入失败！\n";
+    return false;
+  }
 
   std::cout << "  " << bin_filename << "已生成\n";
+
+  if (std::fclose(fout_bin) != 0) {
+    std::cerr << "bin文件关闭失败！\n";
+    return false;
+  }
   return true;
 }
 

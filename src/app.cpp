@@ -13,8 +13,6 @@ namespace external_sort {
 namespace app {
 ExternalSortApp::ExternalSortApp(ConfigOptions cfg)
     : options_(cfg),
-      fout_errors_buffer_(cfg.io_buffer_size),
-      fout_result_buffer_(cfg.io_buffer_size),
       io_buffer_size_(cfg.io_buffer_size),
       total_run_buffer_size_(cfg.total_run_buffer_size),
       run_size_(cfg.run_size),
@@ -51,7 +49,7 @@ int ExternalSortApp::Run() {
             << "ms] 开始生成.bin文件\n";
 
   // 按块循环读入数据
-  while (1) {
+  while (true) {
     // 读入一块数据
     uint64_t bytes_get = file_reader.GetBlock();
     if (bytes_get == 0) break;
@@ -84,7 +82,7 @@ int ExternalSortApp::Run() {
     while (!file_reader.EndOfBlock()) {
       // [修改] 直接返回字符串时，每次都会复制一次字符串。需要改为零拷贝读取
       // std::string original_string = file_reader.ReadLine();
-      bool is_empty_line = false;   // 不加该判断时，original_string_view.empty() 会将空行也识别为块结束
+      bool is_empty_line = false;   // 不加该判断时，original_string_view.empty()会将 空行 也识别为块结束
       original_string_view = file_reader.ReadLine(is_empty_line);
 
       // 已经读完整个块的内容。（没处理的半段数字已在ReadLine()中被存入first_half_）
@@ -102,22 +100,6 @@ int ExternalSortApp::Run() {
           if (!file_reader.GenerateBin(++total_run, keys)) return 1;
           keys.clear();
         }
-
-        // model::ParsedNumber parsed_number;
-        // parsed_number = parse::NumberParser(original_string_view);
-
-        // if (!parsed_number.is_legal) {
-        //   file_reader.WriteToErrors(original_string_view);
-        // } else {
-        //   uint64_t key = parse::GetKey(parsed_number);
-        //   keys.push_back(key);
-        //   // 如果缓冲区满了，则排序后写入 .bin文件
-        //   if (keys.size() >= run_size_) {
-        //     sort::RadixSort64(keys, radix_sort_buffer);
-        //     if (!file_reader.GenerateBin(++total_run, keys)) return 1;
-        //     keys.clear();
-        //   }
-        // }
       }
     }
   }
