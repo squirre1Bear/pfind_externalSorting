@@ -107,13 +107,10 @@ int ExternalSortApp::Run() {
   // 处理读完所有内容后剩下的半段数字
   first_half = file_reader.GetFirstHalfNumber();
   if (!first_half.empty()) {
-    model::ParsedNumber parsed_number;
-    parsed_number = parse::NumberParser(first_half);
-
-    if (!parsed_number.is_legal) {
+    uint64_t key = 0;
+    if (!parse::ParseLineToKey(std::string_view(first_half), key)) {
       file_reader.WriteToErrors(first_half);
-    } else {
-      uint64_t key = parse::GetKey(parsed_number);
+    }else {
       keys.push_back(key);
     }
   }
@@ -122,11 +119,10 @@ int ExternalSortApp::Run() {
   if (!keys.empty()) {
     sort::RadixSort64(keys, radix_sort_buffer);
     if (!file_reader.GenerateBin(++total_run, keys)) return 1;
-
-    std::vector<uint64_t>().swap(keys);  // 释放keys空间
   }
 
   // 释放空间
+  std::vector<uint64_t>().swap(keys);
   std::vector<uint64_t>().swap(radix_sort_buffer);
 
   time_end = std::chrono::steady_clock::now();

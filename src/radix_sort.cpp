@@ -1,5 +1,7 @@
 #include "pfind_external_sorting/sort/radix_sort.h"
 
+#include <array>
+
 namespace external_sort {
 namespace sort {
 // 64位基数排序
@@ -15,11 +17,16 @@ void RadixSort64(std::vector<uint64_t>& keys, std::vector<uint64_t>& tmp) {
   const uint64_t kRadix = 1ULL << kBitsPerPass;  // 一段可以表示的数字个数
   const uint64_t mask = kRadix - 1;  // 用于取出特定段的数字
 
-  // std::vector<uint64_t> temp(keys.size());  // 排序的桶
-  std::vector<int> count_index0(kRadix);
-  std::vector<int> count_index1(kRadix);
-  std::vector<int> count_index2(kRadix);
-  std::vector<int> count_index3(kRadix);
+  // 记录各段每个值出现了多少次，使用static避免重复声明，array减少分配开销
+  static std::array<int, kRadix> count_index0;
+  static std::array<int, kRadix> count_index1;
+  static std::array<int, kRadix> count_index2;
+  static std::array<int, kRadix> count_index3;
+
+  memset(count_index0.data(), 0, sizeof(count_index0));
+  memset(count_index1.data(), 0, sizeof(count_index1));
+  memset(count_index2.data(), 0, sizeof(count_index2));
+  memset(count_index3.data(), 0, sizeof(count_index3));
 
   // 一次遍历完成计数
   for (int i = 0; i < keys.size(); i++) {
@@ -29,16 +36,16 @@ void RadixSort64(std::vector<uint64_t>& keys, std::vector<uint64_t>& tmp) {
     count_index3[(keys[i] >> 48) & 0xFFFFu]++;  // 记录每个值分别有多少个
   }
 
-  Scatter(count_index0, keys, tmp, kRadix, 0);
-  Scatter(count_index1, keys, tmp, kRadix, 16);
-  Scatter(count_index2, keys, tmp, kRadix, 32);
-  Scatter(count_index3, keys, tmp, kRadix, 48);
+  Scatter(count_index0.data(), keys, tmp, kRadix, 0);
+  Scatter(count_index1.data(), keys, tmp, kRadix, 16);
+  Scatter(count_index2.data(), keys, tmp, kRadix, 32);
+  Scatter(count_index3.data(), keys, tmp, kRadix, 48);
 
   return;
 }
 
 // 将16位数塞入桶中进行一轮排序
-void Scatter(std::vector<int>& count_index, std::vector<uint64_t>& keys,
+void Scatter(int* count_index, std::vector<uint64_t>& keys,
              std::vector<uint64_t>& tmp, const uint64_t kRadix, int shift) {
   // 记录每个值存放的末尾下标。count_index[i]为 <= i的元素个数
   for (int i = 1; i < kRadix; i++) {

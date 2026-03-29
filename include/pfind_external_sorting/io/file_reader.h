@@ -29,7 +29,7 @@ class InputFileReader {
   std::string_view ReadLine(bool& is_empty_line);
   bool IsFirstHalfEmpty();
   void WriteToErrors(std::string_view str);
-  bool GenerateBin(int run_number, std::vector<uint64_t>& keys);
+  bool GenerateBin(int run_number, const std::vector<uint64_t>& keys);
   FILE* GetResultStream();
   std::string& GetFirstHalfNumber();
   std::string& GetCompelteFirstHalfNumber();

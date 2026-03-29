@@ -77,7 +77,7 @@ bool InputFileReader::GetBuffer() {
 
 // 读入一块数据，并返回实际读入的字节数
 uint64_t InputFileReader::GetBlock() {
-  uint64_t bytes_read = fread(fin_buffer_.data(), 1, fin_buffer_.size(), fin_);
+  const uint64_t bytes_read = fread(fin_buffer_.data(), 1, fin_buffer_.size(), fin_);
   block_begin_ = fin_buffer_.data();
   block_cursor_ = fin_buffer_.data();
   block_end_ = fin_buffer_.data() + bytes_read;
@@ -169,7 +169,7 @@ void InputFileReader::WriteToErrors(std::string_view str_view) {
 bool InputFileReader::IsFirstHalfEmpty() { return first_half_number_.empty(); }
 
 // 当输入缓冲区满了，内部排序后写入 .bin文件
-bool InputFileReader::GenerateBin(int run_number, std::vector<uint64_t>& keys) {
+bool InputFileReader::GenerateBin(int run_number, const std::vector<uint64_t>& keys) {
   if (run_number > 999) {
     std::cerr << "bin文件数量超过999个";
     return false;
@@ -183,10 +183,10 @@ bool InputFileReader::GenerateBin(int run_number, std::vector<uint64_t>& keys) {
     return false;
   }
 
-  uint64_t written_bytes;
-  written_bytes = fwrite(reinterpret_cast<const char*>(keys.data()), 1,
-                         sizeof(uint64_t) * keys.size(), fout_bin);
-  if (written_bytes != keys.size() * sizeof(uint64_t)) {
+  const uint64_t written =
+      std::fwrite(reinterpret_cast<const char*>(keys.data()), sizeof(uint64_t),
+                  keys.size(), fout_bin);
+  if (written != keys.size()) {
     std::cerr << "bin文件写入失败！\n";
     return false;
   }
