@@ -165,7 +165,6 @@ inline bool ParseLineToKey(std::string_view sv, uint64_t& key) {
   bool has_exponent = false;       // 是否已经读到E e
   bool exp_has_carry_bit = false;  // exp是否有进位
   bool is_positive = true;
-  bool is_standard_float = true;  // 是否为标准浮点表述
   const int num_str_size = end_ptr - begin_ptr;
 
   if (begin_ptr == end_ptr) {
@@ -283,7 +282,6 @@ inline bool ParseLineToKey(std::string_view sv, uint64_t& key) {
       }  // 之前已经读到了e
       has_exponent = true;
       cur_ptr++;
-      is_standard_float = false;
 
       if (cur_ptr >= end_ptr) {
         return false;

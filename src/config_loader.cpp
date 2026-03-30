@@ -11,7 +11,7 @@ namespace config_loader {
 
 app::ConfigOptions ConfigLoader(std::string config_path) {
   std::ifstream fin_config(config_path);
-  if (!fin_config) throw std::runtime_error("配置文件打开失败！");
+  if (!fin_config) throw std::runtime_error("Fail to open config.txt!");
 
   // 解析配置文件读取结果
   app::ConfigOptions config;
@@ -21,6 +21,10 @@ app::ConfigOptions ConfigLoader(std::string config_path) {
     std::string key, value;
     if (std::getline(line_stream, key, '=') &&
         getline(line_stream, value)) {
+
+      //删去换行符的 \r，适配Linux
+      if (!value.empty() && value.back() == '\r') value.pop_back();
+
       if (key == "io_buffer_size") {
         config.io_buffer_size = std::stoull(value);
       } else if (key == "total_run_buffer_size") {

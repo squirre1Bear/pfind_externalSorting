@@ -54,7 +54,7 @@ bool InputFileReader::OpenFiles() {
   fout_errors_ = fopen(fout_errors_path_.c_str(), "wb");
   fout_result_ = fopen(fout_result_path_.c_str(), "wb");
   if (!(fin_ && fout_errors_ && fout_result_)) {
-    std::cerr << "文件打开失败！\n";
+    std::cerr << "Fail to open in/out files!\n";
     return false;
   }
   return true;
@@ -64,12 +64,12 @@ bool InputFileReader::GetBuffer() {
   if (setvbuf(fout_errors_, fout_errors_buffer_.data(),
               _IOFBF,  // 采用全缓冲_IOFBF，缓冲区满了再进行写入操作
               fout_errors_buffer_.size()) != 0) {
-    std::cerr << "缓冲区获取失败！\n";
+    std::cerr << "Fail to get buffer!\n";
     return false;
   }
   if (setvbuf(fout_result_, fout_result_buffer_.data(), _IOFBF,
               fout_result_buffer_.size()) != 0) {
-    std::cerr << "缓冲区获取失败！\n";
+    std::cerr << "Fail to get buffer!\n";
     return false;
   }
   return true;
@@ -171,7 +171,7 @@ bool InputFileReader::IsFirstHalfEmpty() { return first_half_number_.empty(); }
 // 当输入缓冲区满了，内部排序后写入 .bin文件
 bool InputFileReader::GenerateBin(int run_number, const std::vector<uint64_t>& keys) {
   if (run_number > 999) {
-    std::cerr << "bin文件数量超过999个";
+    std::cerr << ".bin is more than 999!";
     return false;
   }
   char bin_filename[16];
@@ -179,7 +179,7 @@ bool InputFileReader::GenerateBin(int run_number, const std::vector<uint64_t>& k
 
   FILE* fout_bin = fopen(bin_filename, "wb");
   if (!fout_bin) {
-    std::cerr << "bin文件打开失败！\n";
+    std::cerr << "Fail to open bin!\n";
     return false;
   }
 
@@ -187,14 +187,14 @@ bool InputFileReader::GenerateBin(int run_number, const std::vector<uint64_t>& k
       std::fwrite(reinterpret_cast<const char*>(keys.data()), sizeof(uint64_t),
                   keys.size(), fout_bin);
   if (written != keys.size()) {
-    std::cerr << "bin文件写入失败！\n";
+    std::cerr << "Fail to write to bin!\n";
     return false;
   }
 
-  std::cout << "  " << bin_filename << "已生成\n";
+  std::cout << "  " << bin_filename << " generated\n";
 
   if (std::fclose(fout_bin) != 0) {
-    std::cerr << "bin文件关闭失败！\n";
+    std::cerr << "Fail to close bin!\n";
     return false;
   }
   return true;

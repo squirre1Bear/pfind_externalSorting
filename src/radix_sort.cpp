@@ -1,6 +1,7 @@
 #include "pfind_external_sorting/sort/radix_sort.h"
 
 #include <array>
+#include <cstring>
 
 namespace external_sort {
 namespace sort {
@@ -12,10 +13,7 @@ void RadixSort64(std::vector<uint64_t>& keys, std::vector<uint64_t>& tmp) {
   if (tmp.size() != keys.size()) tmp.resize(keys.size());
 
   const int kBitsPerPass = 16;  // 每个桶包括了几位数字
-  const int kPassNum = (64 + kBitsPerPass - 1) /
-                       kBitsPerPass;  // 总共进行几趟基数排序，进行了向上取整
   const uint64_t kRadix = 1ULL << kBitsPerPass;  // 一段可以表示的数字个数
-  const uint64_t mask = kRadix - 1;  // 用于取出特定段的数字
 
   // 记录各段每个值出现了多少次，使用static避免重复声明，array减少分配开销
   static std::array<int, kRadix> count_index0;

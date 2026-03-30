@@ -5,7 +5,7 @@
 
 namespace external_sort {
 namespace parse {
-inline bool IsDigit(char c) { return c - '0' >= 0 && c - '0' <= 9; }
+bool IsDigit(char c) { return c - '0' >= 0 && c - '0' <= 9; }
 char digit_table_3[1000][3];
 void InitDigit3() {
   for (int i = 0; i < 1000; i++) {

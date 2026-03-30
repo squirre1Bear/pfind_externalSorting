@@ -31,12 +31,12 @@ void PrintMemoryUsage() {
 
   // std::cout << "curRss=" << memory.current_rss / 1024.0 / 1024.0 << "MB
   // peakRss=" << memory.peak_rss / 1024.0 / 1024.0 << "MB" << '\n';
-  std::cout << "峰值内存使用量 " << memory.peak_rss / 1024.0 / 1024.0 << "MB"
+  std::cout << "Peak Memory Usage " << memory.peak_rss / 1024.0 / 1024.0 << "MB"
             << '\n';
 #else
   struct rusage usage {};
   if (getrusage(RUSAGE_SELF, &usage) == 0) {
-    std::cout << "峰值内存使用量 " << usage.ru_maxrss / 1024.0 << "MB" << '\n';
+    std::cout << "Peak Memory Usage " << usage.ru_maxrss / 1024.0 << "MB" << '\n';
   }
 #endif
   return;

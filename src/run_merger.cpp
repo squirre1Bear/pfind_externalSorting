@@ -24,13 +24,13 @@ void MergeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
     snprintf(run_path, 16, "tmp/run_%03d.bin", i + 1);
     run_files.emplace_back(run_path, std::ios::binary);
     if (!run_files.back()) {
-      std::cerr << "bin文件打开失败！\n";
+      std::cerr << "Fail to open bin!\n";
       return;
     }
   }
 
   if (k == 0) {
-    std::cout << "所有数字均不合法！\n";
+    std::cout << "All numbers illegal\n";
     return;
   }
   uint64_t bytes_pre_run = total_run_buffer_size / k;
@@ -76,7 +76,7 @@ void MergeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
     if (buffered_count >= max_buffer_num) {
       if (fwrite(buffer_out.data(), 1, buffer_out.size(), fout_result) !=
           buffer_out.size()) {
-        std::cerr << "result文件写入失败！\n";
+        std::cerr << "Fail to write to result!\n";
         return;
       }
       buffered_count = 0;
@@ -84,7 +84,6 @@ void MergeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
 
     // 找从哪个文件来的，继续读入一个数
     int file_index = node.from_where;
-    model::MergeNode new_node;
 
     // 如果当前缓存已经读完，则继续读入当前文件至缓存
     if (buffer_cursor[file_index] >= valid_num[file_index]) {
@@ -111,7 +110,7 @@ void MergeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
     if (fwrite(buffer_out.data(), 1, 18 * buffered_count, fout_result) !=
         18 * buffered_count) {  // 注意buffer_out没有满，写入量不是
                                 // buffer_out.size()！
-      std::cerr << "result文件写入失败！\n";
+      std::cerr << "Fail to write to result!\n";
       return;
     }
 
@@ -126,7 +125,7 @@ void MergeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
 // k为run的数量
 void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
   if (k == 0) {
-    std::cout << "数据集中没有数字合法！\n";
+    std::cout << "All numbers illegal\n";
     return;
   }
 
@@ -139,7 +138,7 @@ void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
     snprintf(run_path, 16, "tmp/run_%03d.bin", i + 1);
     run_files.emplace_back(fopen(run_path, "rb"));
     if (!run_files.back()) {
-      std::cerr << "bin文件打开失败！\n";
+      std::cerr << "Fail to open bin\n";
       return;
     }
   }
@@ -147,7 +146,7 @@ void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
   uint64_t bytes_per_run = total_run_buffer_size / k;
   bytes_per_run = (bytes_per_run / sizeof(uint64_t)) * sizeof(uint64_t);  // 确保bytes_per_run为8的倍数，防止后面读取时越界
   if (bytes_per_run < sizeof(uint64_t)) {
-    std::cerr << "total_run_buffer_size 太小，无法给每个 run 分到至少一个 uint64_t\n";
+    std::cerr << "total_run_buffer_size too small, each run is less than sizeof(uint64_t)\n";
     return;
   }
 
@@ -219,7 +218,7 @@ void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
     if (buffered_count >= max_buffer_num) {
       if (fwrite(buffer_out.data(), 1, buffer_out.size(), fout_result) !=
           buffer_out.size()) {
-        std::cerr << "result文件写入失败！\n";
+        std::cerr << "Fail to write to result!\n";
         return;
       }
       buffered_count = 0;
@@ -264,7 +263,7 @@ void LoserTreeSort(int k, uint64_t total_run_buffer_size, FILE* fout_result) {
   if (buffered_count != 0) {
     if (fwrite(buffer_out.data(), 1, 18 * buffered_count, fout_result) !=
         18 * buffered_count) {  // 注意buffer_out没有满，写入量不是 buffer_out.size()！
-      std::cerr << "result文件写入失败！\n";
+      std::cerr << "Fail to write to result!\n";
       return;
     }
 

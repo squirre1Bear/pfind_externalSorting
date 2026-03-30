@@ -46,7 +46,7 @@ int ExternalSortApp::Run() {
             << std::chrono::duration_cast<std::chrono::milliseconds>(time_end -
                                                                      time_begin)
                    .count()
-            << "ms] 开始生成.bin文件\n";
+            << "ms] begin to generate .bin\n";
 
   // 按块循环读入数据
   while (true) {
@@ -130,7 +130,7 @@ int ExternalSortApp::Run() {
             << std::chrono::duration_cast<std::chrono::milliseconds>(time_end -
                                                                      time_begin)
                    .count()
-            << "ms] 开始归并排序\n";
+            << "ms] Begin to merge\n";
 
   // 初始化从int->string的表格
   external_sort::parse::InitDigit3();
@@ -146,7 +146,7 @@ int ExternalSortApp::Run() {
             << std::chrono::duration_cast<std::chrono::milliseconds>(time_end -
                                                                      time_begin)
                    .count()
-            << "ms] 结果输出完成 \n";
+            << "ms] Results had been output\n";
 
   external_sort::monitor::PrintMemoryUsage();
   return 0;
